@@ -1,0 +1,1407 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  GraduationCap, 
+  BookOpen, 
+  Plus, 
+  Trash2, 
+  Edit2, 
+  Moon, 
+  Sun, 
+  Palette, 
+  TrendingUp, 
+  Award, 
+  CheckCircle, 
+  AlertCircle, 
+  LogOut, 
+  User, 
+  Lock, 
+  ChevronRight, 
+  Info,
+  ChevronDown,
+  X,
+  FileText
+} from 'lucide-react';
+
+// === ระบบชุดสี 5 ธีมสี ===
+const THEMES = {
+  emerald: {
+    name: "Emerald Green",
+    primary: "from-emerald-500 to-teal-600",
+    text: "text-emerald-400",
+    bgGradient: "from-emerald-950 via-slate-900 to-teal-950",
+    lightBg: "from-emerald-50 via-slate-50 to-teal-50",
+    accent: "bg-emerald-500",
+    border: "border-emerald-500/20"
+  },
+  blue: {
+    name: "Royal Blue",
+    primary: "from-blue-500 to-indigo-600",
+    text: "text-blue-400",
+    bgGradient: "from-slate-950 via-blue-950 to-indigo-950",
+    lightBg: "from-slate-50 via-blue-50 to-indigo-50",
+    accent: "bg-blue-500",
+    border: "border-blue-500/20"
+  },
+  sunset: {
+    name: "Cyber Sunset",
+    primary: "from-orange-500 to-rose-600",
+    text: "text-rose-400",
+    bgGradient: "from-slate-950 via-rose-950 to-stone-900",
+    lightBg: "from-slate-50 via-rose-50 to-orange-50",
+    accent: "bg-rose-500",
+    border: "border-rose-500/20"
+  },
+  purple: {
+    name: "Lavender Dream",
+    primary: "from-purple-500 to-fuchsia-600",
+    text: "text-purple-400",
+    bgGradient: "from-slate-950 via-purple-950 to-fuchsia-950",
+    lightBg: "from-slate-50 via-purple-50 to-fuchsia-50",
+    accent: "bg-purple-500",
+    border: "border-purple-500/20"
+  },
+  charcoal: {
+    name: "Soft Charcoal",
+    primary: "from-zinc-500 to-slate-700",
+    text: "text-zinc-400",
+    bgGradient: "from-zinc-950 via-slate-950 to-zinc-900",
+    lightBg: "from-zinc-100 via-slate-100 to-zinc-50",
+    accent: "bg-zinc-600",
+    border: "border-zinc-500/20"
+  }
+};
+
+// === โครงสร้างหลักสูตร (ข้อมูลหมวดวิชาหลักและกลุ่มย่อย) ===
+const CURRICULUM = {
+  general: {
+    id: "general",
+    name: "หมวดศึกษาทั่วไป",
+    requiredCredits: 33,
+    subgroups: {
+      thai: { id: "general_thai", name: "1.1 กลุ่มวิชาภาษาไทย", minCredits: 3 },
+      foreign: { id: "general_foreign", name: "1.2 กลุ่มวิชาภาษาต่างประเทศ", minCredits: 6 },
+      science: { id: "general_science", name: "1.3 กลุ่มวิชาวิทยาศาสตร์", minCredits: 3 },
+      math: { id: "general_math", name: "1.4 กลุ่มวิชาคณิตศาสตร์", minCredits: 3 },
+      social: { id: "general_social", name: "1.5 กลุ่มวิชาสังคมศาสตร์", minCredits: 3 },
+      humanities: { id: "general_humanities", name: "1.6 กลุ่มวิชามนุษยศาสตร์", minCredits: 3 }
+    }
+  },
+  core: {
+    id: "core",
+    name: "กลุ่มวิชาแกน",
+    requiredCredits: 27
+  },
+  special: {
+    id: "special",
+    name: "กลุ่มวิชาเฉพาะ",
+    requiredCredits: 67,
+    subgroups: {
+      compulsory: { id: "special_compulsory", name: "วิชาชีพบังคับ", minCredits: 52 },
+      elective: { id: "special_elective", name: "วิชาชีพเลือก", minCredits: 15 }
+    }
+  },
+  freeElective: {
+    id: "freeElective",
+    name: "หมวดเลือกเสรี",
+    requiredCredits: 6
+  },
+  totalRequired: 133
+};
+
+// === Mock Data สำหรับรายวิชาเริ่มต้น (นักศึกษาชั้นปีที่ 3 เทอม 1) ===
+const INITIAL_COURSES = [
+  // ปี 1 เทอม 1
+  { id: "1", code: "THAI101", name: "ภาษาไทยเพื่อการสื่อสาร", credits: 3, grade: "A", category: "general_thai", year: 1, term: "1" },
+  { id: "2", code: "ENG101", name: "ภาษาอังกฤษระดับต้น", credits: 3, grade: "B+", category: "general_foreign", year: 1, term: "1" },
+  { id: "3", code: "MATH101", name: "คณิตศาสตร์พื้นฐาน", credits: 3, grade: "B", category: "general_math", year: 1, term: "1" },
+  { id: "4", code: "DIG101", name: "พื้นฐานการออกแบบดิจิทัล", credits: 3, grade: "A", category: "core", year: 1, term: "1" },
+  { id: "5", code: "DIG102", name: "ศิลปะและการออกแบบเบื้องต้น", credits: 3, grade: "B+", category: "core", year: 1, term: "1" },
+  
+  // ปี 1 เทอม 2
+  { id: "6", code: "ENG102", name: "ภาษาอังกฤษเพื่อการเรียนรู้", credits: 3, grade: "A", category: "general_foreign", year: 1, term: "2" },
+  { id: "7", code: "SCI101", name: "วิทยาศาสตร์และเทคโนโลยีในชีวิตประจำวัน", credits: 3, grade: "A", category: "general_science", year: 1, term: "2" },
+  { id: "8", code: "SOC101", name: "สังคมและการเปลี่ยนแปลง", credits: 3, grade: "B+", category: "general_social", year: 1, term: "2" },
+  { id: "9", code: "DIG103", name: "การโปรแกรมสำหรับสื่อดิจิทัล", credits: 3, grade: "B", category: "core", year: 1, term: "2" },
+  { id: "10", code: "DIG104", name: "ทฤษฎีสีและองค์ประกอบศิลป์", credits: 3, grade: "A", category: "core", year: 1, term: "2" },
+
+  // ปี 2 เทอม 1
+  { id: "11", code: "HUM101", name: "มนุษยสัมพันธ์และจริยศาสตร์", credits: 3, grade: "A", category: "general_humanities", year: 2, term: "1" },
+  { id: "12", code: "DIG201", name: "การออกแบบเว็บและแอปพลิเคชัน UI/UX", credits: 3, grade: "A", category: "special_compulsory", year: 2, term: "1" },
+  { id: "13", code: "DIG202", name: "แอนิเมชัน 2 มิติเบื้องต้น", credits: 3, grade: "B+", category: "special_compulsory", year: 2, term: "1" },
+  { id: "14", code: "DIG203", name: "การสร้างสรรค์ 3D Modeling", credits: 3, grade: "C+", category: "special_compulsory", year: 2, term: "1" },
+  { id: "15", code: "DIG204", name: "การเขียนโค้ดสคริปต์ขั้นสูง", credits: 3, grade: "B", category: "core", year: 2, term: "1" },
+
+  // ปี 2 เทอม 2
+  { id: "16", code: "DIG205", name: "การออกแบบปฏิสัมพันธ์เชิงสร้างสรรค์", credits: 3, grade: "A", category: "special_compulsory", year: 2, term: "2" },
+  { id: "17", code: "DIG206", name: "ความปลอดภัยไซเบอร์และกฎหมายดิจิทัล", credits: 3, grade: "A", category: "special_compulsory", year: 2, term: "2" },
+  { id: "18", code: "DIG210", name: "การวาดภาพเพื่อเกมดีไซน์", credits: 3, grade: "B+", category: "special_elective", year: 2, term: "2" },
+  { id: "19", code: "FREE101", name: "การลงทุนและการเงินส่วนบุคคล", credits: 3, grade: "A", category: "freeElective", year: 2, term: "2" },
+  { id: "20", code: "DIG207", name: "สถิติสำหรับการวิเคราะห์ข้อมูลผู้ใช้", credits: 3, grade: "B", category: "core", year: 2, term: "2" }
+];
+
+export default function App() {
+  // === State Management ===
+  const [courses, setCourses] = useState(() => {
+    const saved = localStorage.getItem('nong2dekaokbab_courses');
+    return saved ? JSON.parse(saved) : INITIAL_COURSES;
+  });
+
+  const [currentThemeKey, setCurrentThemeKey] = useState(() => {
+    return localStorage.getItem('nong2dekaokbab_theme') || 'emerald';
+  });
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('nong2dekaokbab_darkmode');
+    return saved ? JSON.parse(saved) : true;
+  });
+
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'courses' | 'analysis' | 'settings'
+  const [selectedYear, setSelectedYear] = useState(3);
+  const [selectedTerm, setSelectedTerm] = useState("1");
+  const [neverRepeated, setNeverRepeated] = useState(true);
+  const [finishInTime, setFinishInTime] = useState(true);
+
+  // Auth Simulation (Supabase Auth Mock)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('nong2dekaokbab_is_logged_in') === 'true';
+  });
+  const [userEmail, setUserEmail] = useState(() => {
+    return localStorage.getItem('nong2dekaokbab_user_email') || 'student.digital@university.ac.th';
+  });
+  const [authError, setAuthError] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  // Edit / Add Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
+  
+  // Form States for Add/Edit Course
+  const [formCode, setFormCode] = useState("");
+  const [formName, setFormName] = useState("");
+  const [formCredits, setFormCredits] = useState(3);
+  const [formGrade, setFormGrade] = useState("A");
+  const [formCategory, setFormCategory] = useState("general_thai");
+  const [formYear, setFormYear] = useState(3);
+  const [formTerm, setFormTerm] = useState("1");
+
+  // Save to LocalStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('nong2dekaokbab_courses', JSON.stringify(courses));
+  }, [courses]);
+
+  useEffect(() => {
+    localStorage.setItem('nong2dekaokbab_theme', currentThemeKey);
+  }, [currentThemeKey]);
+
+  useEffect(() => {
+    localStorage.setItem('nong2dekaokbab_darkmode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
+
+  // Handle Authentication Mock
+  const handleAuth = (e) => {
+    e.preventDefault();
+    if (!emailInput || !passwordInput) {
+      setAuthError("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+    if (!emailInput.includes("@")) {
+      setAuthError("กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง");
+      return;
+    }
+    if (passwordInput.length < 6) {
+      setAuthError("รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร");
+      return;
+    }
+
+    setAuthError("");
+    setIsLoggedIn(true);
+    setUserEmail(emailInput);
+    localStorage.setItem('nong2dekaokbab_is_logged_in', 'true');
+    localStorage.setItem('nong2dekaokbab_user_email', emailInput);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem('nong2dekaokbab_is_logged_in');
+    localStorage.removeItem('nong2dekaokbab_user_email');
+    setEmailInput("");
+    setPasswordInput("");
+  };
+
+  // Convert Grade to GPA weight
+  const gradeToWeight = (grade) => {
+    const weights = {
+      "A": 4.0, "B+": 3.5, "B": 3.0, "C+": 2.5, "C": 2.0, "D+": 1.5, "D": 1.0, "F": 0.0
+    };
+    return weights[grade] !== undefined ? weights[grade] : null;
+  };
+
+  // === การคำนวณสถิติและคะแนนผลการเรียน ===
+  const calculatedStats = useMemo(() => {
+    let totalGradePoints = 0;
+    let totalCreditsUsedForGpa = 0;
+    let totalEarnedCredits = 0;
+    let hasF = false;
+
+    // ตัวแปรเก็บหน่วยกิตแยกแต่ละหมวด
+    const creditsByCategory = {
+      general: 0,
+      general_thai: 0,
+      general_foreign: 0,
+      general_science: 0,
+      general_math: 0,
+      general_social: 0,
+      general_humanities: 0,
+      core: 0,
+      special_compulsory: 0,
+      special_elective: 0,
+      freeElective: 0
+    };
+
+    courses.forEach(c => {
+      const weight = gradeToWeight(c.grade);
+      const isPassed = c.grade !== "F";
+      
+      if (weight !== null) {
+        totalGradePoints += weight * c.credits;
+        totalCreditsUsedForGpa += c.credits;
+      }
+      
+      if (isPassed) {
+        totalEarnedCredits += c.credits;
+        
+        // บวกหน่วยกิตให้หมวดหลักและกลุ่มย่อย
+        if (creditsByCategory[c.category] !== undefined) {
+          creditsByCategory[c.category] += c.credits;
+        }
+
+        // เชื่อมโยงหมวดศึกษาทั่วไป (ย่อย) -> หมวดศึกษาทั่วไป (หลัก)
+        if (c.category.startsWith("general_")) {
+          creditsByCategory.general += c.credits;
+        }
+        
+        // เชื่อมโยงวิชาเฉพาะบังคับ/เลือก -> กลุ่มวิชาเฉพาะ
+        if (c.category.startsWith("special_")) {
+          creditsByCategory.special += c.credits;
+        }
+      }
+
+      if (c.grade === "F") {
+        hasF = true;
+      }
+    });
+
+    const cumulativeGpa = totalCreditsUsedForGpa > 0 
+      ? (totalGradePoints / totalCreditsUsedForGpa).toFixed(2) 
+      : "0.00";
+
+    // วิเคราะห์เกียรตินิยม
+    let honors = "ไม่มี";
+    const gpaFloat = parseFloat(cumulativeGpa);
+    
+    if (gpaFloat >= 3.75 && !hasF && neverRepeated && finishInTime) {
+      honors = "เกียรตินิยมอันดับ 1 🏆";
+    } else if (gpaFloat >= 3.25 && gpaFloat < 3.75 && !hasF && neverRepeated && finishInTime) {
+      honors = "เกียรตินิยมอันดับ 2 🥈";
+    }
+
+    // คำนวณความคืบหน้าของแต่ละหมวดเพื่อนำไปพล็อตเกจและบาร์
+    const progress = {
+      general: {
+        current: Math.min(creditsByCategory.general, CURRICULUM.general.requiredCredits),
+        total: CURRICULUM.general.requiredCredits,
+        percentage: Math.round((Math.min(creditsByCategory.general, CURRICULUM.general.requiredCredits) / CURRICULUM.general.requiredCredits) * 100),
+        subgroups: {
+          thai: { current: creditsByCategory.general_thai, min: CURRICULUM.general.subgroups.thai.minCredits },
+          foreign: { current: creditsByCategory.general_foreign, min: CURRICULUM.general.subgroups.foreign.minCredits },
+          science: { current: creditsByCategory.general_science, min: CURRICULUM.general.subgroups.science.minCredits },
+          math: { current: creditsByCategory.general_math, min: CURRICULUM.general.subgroups.math.minCredits },
+          social: { current: creditsByCategory.general_social, min: CURRICULUM.general.subgroups.social.minCredits },
+          humanities: { current: creditsByCategory.general_humanities, min: CURRICULUM.general.subgroups.humanities.minCredits }
+        }
+      },
+      core: {
+        current: Math.min(creditsByCategory.core, CURRICULUM.core.requiredCredits),
+        total: CURRICULUM.core.requiredCredits,
+        percentage: Math.round((Math.min(creditsByCategory.core, CURRICULUM.core.requiredCredits) / CURRICULUM.core.requiredCredits) * 100)
+      },
+      special: {
+        current: Math.min(creditsByCategory.special, CURRICULUM.special.requiredCredits),
+        total: CURRICULUM.special.requiredCredits,
+        percentage: Math.round((Math.min(creditsByCategory.special, CURRICULUM.special.requiredCredits) / CURRICULUM.special.requiredCredits) * 100),
+        subgroups: {
+          compulsory: { current: creditsByCategory.special_compulsory, min: CURRICULUM.special.subgroups.compulsory.minCredits },
+          elective: { current: creditsByCategory.special_elective, min: CURRICULUM.special.subgroups.elective.minCredits }
+        }
+      },
+      freeElective: {
+        current: Math.min(creditsByCategory.freeElective, CURRICULUM.freeElective.requiredCredits),
+        total: CURRICULUM.freeElective.requiredCredits,
+        percentage: Math.round((Math.min(creditsByCategory.freeElective, CURRICULUM.freeElective.requiredCredits) / CURRICULUM.freeElective.requiredCredits) * 100)
+      }
+    };
+
+    // ตรวจสอบความถูกต้องตามแผนของทุกหมวดวิชาเพื่อดู "สถานะการจบหลักสูตร"
+    const isGeneralSubgroupsOk = 
+      creditsByCategory.general_thai >= CURRICULUM.general.subgroups.thai.minCredits &&
+      creditsByCategory.general_foreign >= CURRICULUM.general.subgroups.foreign.minCredits &&
+      creditsByCategory.general_science >= CURRICULUM.general.subgroups.science.minCredits &&
+      creditsByCategory.general_math >= CURRICULUM.general.subgroups.math.minCredits &&
+      creditsByCategory.general_social >= CURRICULUM.general.subgroups.social.minCredits &&
+      creditsByCategory.general_humanities >= CURRICULUM.general.subgroups.humanities.minCredits;
+
+    const isSpecialSubgroupsOk = 
+      creditsByCategory.special_compulsory >= CURRICULUM.special.subgroups.compulsory.minCredits &&
+      creditsByCategory.special_elective >= CURRICULUM.special.subgroups.elective.minCredits;
+
+    const totalCreditsMet = totalEarnedCredits >= CURRICULUM.totalRequired;
+    const allCategoriesMet = 
+      creditsByCategory.general >= CURRICULUM.general.requiredCredits &&
+      creditsByCategory.core >= CURRICULUM.core.requiredCredits &&
+      creditsByCategory.special >= CURRICULUM.special.requiredCredits &&
+      creditsByCategory.freeElective >= CURRICULUM.freeElective.requiredCredits;
+
+    const graduationStatus = (totalCreditsMet && allCategoriesMet && isGeneralSubgroupsOk && isSpecialSubgroupsOk)
+      ? "พร้อมจบการศึกษา 🎓" 
+      : "กำลังอยู่ระหว่างดำเนินการศึกษา 📝";
+
+    return {
+      cumulativeGpa,
+      totalEarnedCredits,
+      totalCreditsUsedForGpa,
+      hasF,
+      creditsByCategory,
+      progress,
+      honors,
+      graduationStatus,
+      isGeneralSubgroupsOk,
+      isSpecialSubgroupsOk
+    };
+  }, [courses, neverRepeated, finishInTime]);
+
+  // === คำนวณ GPA แยกแต่ละเทอมและปี เพื่อทำกราฟ ===
+  const semesterGpaHistory = useMemo(() => {
+    const terms = {};
+    courses.forEach(c => {
+      const termKey = `ปี ${c.year} เทอม ${c.term}`;
+      const weight = gradeToWeight(c.grade);
+      
+      if (weight !== null) {
+        if (!terms[termKey]) {
+          terms[termKey] = { gradePoints: 0, credits: 0, year: c.year, term: c.term };
+        }
+        terms[termKey].gradePoints += weight * c.credits;
+        terms[termKey].credits += c.credits;
+      }
+    });
+
+    return Object.keys(terms)
+      .map(key => {
+        const gpa = (terms[key].gradePoints / terms[key].credits).toFixed(2);
+        return {
+          label: key,
+          gpa: parseFloat(gpa),
+          sortVal: terms[key].year * 10 + (terms[key].term === "Summer" ? 3 : parseInt(terms[key].term))
+        };
+      })
+      .sort((a, b) => a.sortVal - b.sortVal);
+  }, [courses]);
+
+  // Active theme properties
+  const activeTheme = THEMES[currentThemeKey];
+
+  // Open Modal to Add/Edit Course
+  const openCourseModal = (course = null) => {
+    if (course) {
+      setEditingCourse(course);
+      setFormCode(course.code);
+      setFormName(course.name);
+      setFormCredits(course.credits);
+      setFormGrade(course.grade);
+      setFormCategory(course.category);
+      setFormYear(course.year);
+      setFormTerm(course.term);
+    } else {
+      setEditingCourse(null);
+      setFormCode("");
+      setFormName("");
+      setFormCredits(3);
+      setFormGrade("A");
+      setFormCategory("general_thai");
+      setFormYear(selectedYear);
+      setFormTerm(selectedTerm);
+    }
+    setIsModalOpen(true);
+  };
+
+  // Handle Save Course
+  const saveCourse = () => {
+    if (!formCode || !formName) {
+      alert("กรุณากรอกรหัสวิชาและชื่อวิชาให้ครบถ้วน");
+      return;
+    }
+
+    const updatedCourse = {
+      id: editingCourse ? editingCourse.id : Date.now().toString(),
+      code: formCode.toUpperCase(),
+      name: formName,
+      credits: Number(formCredits),
+      grade: formGrade,
+      category: formCategory,
+      year: Number(formYear),
+      term: formTerm
+    };
+
+    if (editingCourse) {
+      setCourses(courses.map(c => c.id === editingCourse.id ? updatedCourse : c));
+    } else {
+      setCourses([...courses, updatedCourse]);
+    }
+    setIsModalOpen(false);
+  };
+
+  // Handle Delete Course
+  const deleteCourse = (id) => {
+    setCourses(courses.filter(c => c.id !== id));
+  };
+
+  // Filtered courses for Course Management Screen
+  const filteredCourses = courses.filter(c => c.year === selectedYear && c.term === selectedTerm);
+
+  // คำนวณ GPA รายเทอมปัจจุบันที่ฟิลเตอร์อยู่
+  const selectedTermGpa = useMemo(() => {
+    let pts = 0;
+    let crs = 0;
+    filteredCourses.forEach(c => {
+      const w = gradeToWeight(c.grade);
+      if (w !== null) {
+        pts += w * c.credits;
+        crs += c.credits;
+      }
+    });
+    return crs > 0 ? (pts / crs).toFixed(2) : "0.00";
+  }, [filteredCourses]);
+
+  const selectedTermCredits = useMemo(() => {
+    return filteredCourses.reduce((sum, c) => sum + (c.grade !== "F" ? c.credits : 0), 0);
+  }, [filteredCourses]);
+
+  // Auth Layout (if not logged in)
+  if (!isLoggedIn) {
+    return (
+      <div className={`min-h-screen font-['Sarabun','Inter',sans-serif] flex flex-col items-center justify-center p-4 transition-colors duration-500 bg-gradient-to-br ${isDarkMode ? activeTheme.bgGradient : activeTheme.lightBg}`}>
+        {/* Mock iPhone Frame Container */}
+        <div className={`w-full max-w-sm h-[880px] rounded-[50px] shadow-2xl flex flex-col justify-between overflow-hidden relative border-8 border-slate-800 ${isDarkMode ? 'bg-slate-900/90 text-white' : 'bg-white/90 text-slate-800'}`}>
+          
+          {/* Dynamic Island Notch */}
+          <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-center">
+            <div className="w-2.5 h-2.5 rounded-full bg-slate-950 border border-slate-800 ml-auto mr-3"></div>
+          </div>
+
+          <div className="flex-1 flex flex-col justify-center px-6 pt-12 pb-6 overflow-y-auto">
+            <div className="text-center mb-8">
+              <div className={`w-20 h-20 mx-auto rounded-3xl bg-gradient-to-r ${activeTheme.primary} flex items-center justify-center text-white shadow-lg mb-4`}>
+                <GraduationCap size={44} />
+              </div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Nong2Dekaokbab</h1>
+              <p className="text-xs mt-1 opacity-75">แอปตรวจสอบและวางแผนผลการเรียน</p>
+              <p className="text-[10px] mt-1 font-semibold tracking-wider text-emerald-500 uppercase">Digital Design & Technology</p>
+            </div>
+
+            {/* Glassmorphism Auth Card */}
+            <div className={`p-6 rounded-3xl border backdrop-blur-xl ${isDarkMode ? 'bg-white/5 border-white/10 shadow-black/40' : 'bg-slate-950/5 border-black/5 shadow-slate-200/50'} shadow-xl`}>
+              <h2 className="text-lg font-bold mb-4 text-center">{isSignUp ? "ลงทะเบียนนักศึกษาใหม่" : "เข้าสู่ระบบนักศึกษา"}</h2>
+              
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold block mb-1 opacity-85">อีเมลมหาวิทยาลัย</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 opacity-60">
+                      <User size={16} />
+                    </span>
+                    <input 
+                      type="email" 
+                      placeholder="student@university.ac.th" 
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      className={`w-full pl-9 pr-3 py-2.5 rounded-xl text-sm border focus:outline-none transition-all ${
+                        isDarkMode 
+                          ? 'bg-slate-950/40 border-white/10 text-white focus:border-emerald-500' 
+                          : 'bg-white border-slate-300 text-slate-800 focus:border-emerald-600'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold block mb-1 opacity-85">รหัสผ่าน</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 opacity-60">
+                      <Lock size={16} />
+                    </span>
+                    <input 
+                      type="password" 
+                      placeholder="••••••••" 
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      className={`w-full pl-9 pr-3 py-2.5 rounded-xl text-sm border focus:outline-none transition-all ${
+                        isDarkMode 
+                          ? 'bg-slate-950/40 border-white/10 text-white focus:border-emerald-500' 
+                          : 'bg-white border-slate-300 text-slate-800 focus:border-emerald-600'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {authError && (
+                  <p className="text-red-500 text-xs flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    {authError}
+                  </p>
+                )}
+
+                <button 
+                  type="submit"
+                  className={`w-full py-3 rounded-xl font-bold text-sm text-white shadow-md bg-gradient-to-r ${activeTheme.primary} hover:opacity-90 transition-all transform active:scale-95`}
+                >
+                  {isSignUp ? "ลงชื่อเข้าใช้งาน" : "เข้าสู่ระบบ (Demo)"}
+                </button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <button 
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className={`text-xs hover:underline ${activeTheme.text}`}
+                >
+                  {isSignUp ? "เป็นสมาชิกอยู่แล้ว? เข้าสู่ระบบ" : "ต้องการสมัครสมาชิกใหม่? คลิกที่นี่"}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Demo Assist */}
+            <div className={`mt-6 p-4 rounded-2xl text-xs border ${isDarkMode ? 'bg-slate-800/40 border-white/5 text-slate-300' : 'bg-slate-200/40 border-slate-300/50 text-slate-600'}`}>
+              <p className="font-semibold mb-1">💡 ข้อมูลทดสอบระบบ (Demo):</p>
+              <p>สามารถกดเข้าสู่ระบบได้ทันทีโดยใช้อีเมลและรหัสผ่านจำลองใดๆ เพื่อทดสอบ Dashboard ตัวเต็ม</p>
+            </div>
+          </div>
+
+          {/* Home Indicator */}
+          <div className="h-6 flex justify-center items-center pb-2">
+            <div className="w-32 h-1 bg-slate-700 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen font-['Sarabun','Inter',sans-serif] flex flex-col items-center justify-center p-4 transition-colors duration-500 bg-gradient-to-br ${isDarkMode ? activeTheme.bgGradient : activeTheme.lightBg}`}>
+      
+      {/* Simulation Box formatted for iPhone 17 */}
+      <div className={`w-full max-w-sm h-[880px] rounded-[50px] shadow-2xl flex flex-col justify-between overflow-hidden relative border-8 border-slate-800 ${isDarkMode ? 'bg-slate-900/90 text-white' : 'bg-white/95 text-slate-800'} backdrop-blur-xl transition-all`}>
+        
+        {/* Dynamic Island Notch */}
+        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-slate-950 border border-slate-800 ml-auto mr-3"></div>
+        </div>
+
+        {/* Header Bar */}
+        <header className="px-5 pt-11 pb-3 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-r ${activeTheme.primary} flex items-center justify-center text-white shadow-md`}>
+              <GraduationCap size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold tracking-tight">Nong2Dekaokbab</h2>
+              <span className="text-[9px] opacity-65 tracking-wider uppercase font-semibold">DDT Portfolio</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Quick Dark Mode Toggle */}
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`p-2 rounded-xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-slate-100 border-slate-200 hover:bg-slate-200'}`}
+            >
+              {isDarkMode ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-indigo-600" />}
+            </button>
+            
+            {/* Theme Trigger Tab Link */}
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`p-2 rounded-xl border transition-all ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}
+              style={{ color: 'var(--theme-color)' }}
+            >
+              <Palette size={15} />
+            </button>
+          </div>
+        </header>
+
+        {/* Content Container (Scrollable) */}
+        <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          
+          {/* TAB 1: DASHBOARD */}
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Glass Header Card (Welcome) */}
+              <div className={`p-4 rounded-3xl border backdrop-blur-md relative overflow-hidden ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-950/5 border-black/5'} shadow-lg`}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">สรุปคะแนนเฉลี่ยปัจจุบัน</p>
+                    <h3 className="text-4xl font-extrabold tracking-tight mt-1">{calculatedStats.cumulativeGpa}</h3>
+                    <p className="text-xs font-semibold mt-2 flex items-center gap-1 opacity-80">
+                      <Award size={14} className="text-yellow-400" />
+                      {calculatedStats.honors !== "ไม่มี" ? calculatedStats.honors : "เรียนรู้ต่อไปอย่างตั้งใจ!"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">หน่วยกิตสะสม</p>
+                    <h4 className="text-2xl font-bold mt-1 text-emerald-400">{calculatedStats.totalEarnedCredits} <span className="text-xs font-medium text-current opacity-70">/ 133</span></h4>
+                    <p className="text-[10px] mt-2 bg-white/10 px-2 py-0.5 rounded-full inline-block font-semibold">DDT-2569</p>
+                  </div>
+                </div>
+
+                {/* Progress bar to Graduation */}
+                <div className="mt-4">
+                  <div className="flex justify-between text-[10px] mb-1 font-semibold">
+                    <span className="opacity-70">ความคืบหน้าสู่ความสำเร็จ</span>
+                    <span>{Math.round((calculatedStats.totalEarnedCredits / 133) * 100)}%</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-black/25 rounded-full overflow-hidden p-0.5">
+                    <div 
+                      className={`h-full rounded-full bg-gradient-to-r ${activeTheme.primary} transition-all duration-1000`}
+                      style={{ width: `${Math.min(100, (calculatedStats.totalEarnedCredits / 133) * 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status and Honors Condition Banner */}
+              <div className={`p-3 rounded-2xl border flex items-center gap-3 ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-950/5 border-black/5'}`}>
+                <div className="flex-1 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="opacity-75 font-semibold">สถานะการสำเร็จการศึกษา</span>
+                    <span className={`font-bold ${calculatedStats.graduationStatus.includes("พร้อมจบ") ? 'text-emerald-400' : 'text-blue-400'}`}>
+                      {calculatedStats.graduationStatus}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs pt-1 border-t border-white/5">
+                    <span className="opacity-75">เกียรตินิยมคาดการณ์</span>
+                    <span className="font-semibold text-yellow-400">{calculatedStats.honors}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Honours Conditions Configurator */}
+              <div className={`p-3 rounded-2xl border space-y-2 ${isDarkMode ? 'bg-slate-900/60 border-white/5' : 'bg-slate-100 border-black/5'}`}>
+                <p className="text-[10px] font-bold uppercase opacity-60">เงื่อนไขเพิ่มเติมเกียรตินิยม</p>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">ไม่เคยได้เกรด F ในรายวิชาใดๆ</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${!calculatedStats.hasF ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                    {!calculatedStats.hasF ? "ตรงเกณฑ์" : "ติด F"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">ไม่เคยลงทะเบียนเรียนซ้ำ (Re-grade)</span>
+                  <button 
+                    onClick={() => setNeverRepeated(!neverRepeated)}
+                    className={`text-xs px-2 py-0.5 rounded-full font-bold transition-all ${neverRepeated ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/10'}`}
+                  >
+                    {neverRepeated ? "ตรงเกณฑ์ (ใช่)" : "ไม่ตรงเกณฑ์ (ไม่ใช่)"}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">จบตามระยะเวลาที่กำหนด (4 ปีหลัก)</span>
+                  <button 
+                    onClick={() => setFinishInTime(!finishInTime)}
+                    className={`text-xs px-2 py-0.5 rounded-full font-bold transition-all ${finishInTime ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/10'}`}
+                  >
+                    {finishInTime ? "ตรงเกณฑ์ (ใช่)" : "ไม่ตรงเกณฑ์ (ไม่ใช่)"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Category Breakdown (Progress Bars) */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold uppercase opacity-70 tracking-wider">หน่วยกิตแยกตามหมวดวิชา</h4>
+                  <span className="text-[10px] text-zinc-500 font-semibold">เป้าหมายรวม 133 นก.</span>
+                </div>
+
+                {/* General Education */}
+                <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-bold">1. หมวดศึกษาทั่วไป (ต้องการ 33 นก.)</span>
+                    <span className="text-xs font-bold">{calculatedStats.progress.general.current}/33 นก.</span>
+                  </div>
+                  
+                  <div className="w-full h-2 bg-slate-700/40 rounded-full overflow-hidden mb-3">
+                    <div 
+                      className={`h-full rounded-full bg-blue-500`}
+                      style={{ width: `${calculatedStats.progress.general.percentage}%` }}
+                    ></div>
+                  </div>
+
+                  {/* Subgroups General Ed */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] border-t border-white/5 pt-2 opacity-85">
+                    <div>
+                      <span className="block text-zinc-500">1.1 ภาษาไทย (มิน 3)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.general.subgroups.thai.current >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.general.subgroups.thai.current} / 3 นก.
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500">1.2 ต่างประเทศ (มิน 6)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.general.subgroups.foreign.current >= 6 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.general.subgroups.foreign.current} / 6 นก.
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500">1.3 วิทย์-นวัตกรรม (มิน 3)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.general.subgroups.science.current >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.general.subgroups.science.current} / 3 นก.
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500">1.4 คณิตศาสตร์ (มิน 3)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.general.subgroups.math.current >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.general.subgroups.math.current} / 3 นก.
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500">1.5 สังคมศาสตร์ (มิน 3)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.general.subgroups.social.current >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.general.subgroups.social.current} / 3 นก.
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500">1.6 มนุษยศาสตร์ (มิน 3)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.general.subgroups.humanities.current >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.general.subgroups.humanities.current} / 3 นก.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Core Education */}
+                <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-bold">2. กลุ่มวิชาแกน (ต้องการ 27 นก.)</span>
+                    <span className="text-xs font-bold">{calculatedStats.progress.core.current}/27 นก.</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-700/40 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-amber-500"
+                      style={{ width: `${calculatedStats.progress.core.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Special Category */}
+                <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-bold">3. กลุ่มวิชาเฉพาะ (ต้องการ 67 นก.)</span>
+                    <span className="text-xs font-bold">{calculatedStats.progress.special.current}/67 นก.</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-700/40 rounded-full overflow-hidden mb-3">
+                    <div 
+                      className="h-full rounded-full bg-emerald-500"
+                      style={{ width: `${calculatedStats.progress.special.percentage}%` }}
+                    ></div>
+                  </div>
+
+                  {/* Subgroups Specific */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] border-t border-white/5 pt-2 opacity-85">
+                    <div>
+                      <span className="block text-zinc-500">3.1 วิชาชีพบังคับ (มิน 52)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.special.subgroups.compulsory.current >= 52 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.special.subgroups.compulsory.current} / 52 นก.
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-500">3.2 วิชาชีพเลือก (มิน 15)</span>
+                      <span className={`font-semibold ${calculatedStats.progress.special.subgroups.elective.current >= 15 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {calculatedStats.progress.special.subgroups.elective.current} / 15 นก.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Free Elective Category */}
+                <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-bold">4. หมวดเลือกเสรี (ต้องการ 6 นก.)</span>
+                    <span className="text-xs font-bold">{calculatedStats.progress.freeElective.current}/6 นก.</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-700/40 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-rose-500"
+                      style={{ width: `${calculatedStats.progress.freeElective.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+              </div>
+            </>
+          )}
+
+          {/* TAB 2: COURSE MANAGEMENT */}
+          {activeTab === 'courses' && (
+            <>
+              {/* Year & Semester Filter Section */}
+              <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'} space-y-3 shadow-sm`}>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] uppercase font-bold opacity-75 block mb-1">ชั้นปีที่ศึกษา</label>
+                    <select 
+                      value={selectedYear} 
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className={`w-full py-2 px-3 text-sm rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-950/50 border-white/10 text-white' : 'bg-white border-slate-300'}`}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(y => (
+                        <option key={y} value={y} className="text-black">ปีการศึกษาที่ {y}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <label className="text-[10px] uppercase font-bold opacity-75 block mb-1">ภาคการศึกษา</label>
+                    <select 
+                      value={selectedTerm} 
+                      onChange={(e) => setSelectedTerm(e.target.value)}
+                      className={`w-full py-2 px-3 text-sm rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-950/50 border-white/10 text-white' : 'bg-white border-slate-300'}`}
+                    >
+                      <option value="1" className="text-black">ภาคเรียนที่ 1</option>
+                      <option value="2" className="text-black">ภาคเรียนที่ 2</option>
+                      <option value="Summer" className="text-black">ภาคเรียนฤดูร้อน</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t border-white/5 text-xs">
+                  <div>
+                    <span className="opacity-70">เกรดเฉลี่ยประจำเทอม:</span>
+                    <span className="font-bold text-emerald-400 ml-1.5">{selectedTermGpa}</span>
+                  </div>
+                  <div>
+                    <span className="opacity-70">ลงทะเบียนสำเร็จ:</span>
+                    <span className="font-bold ml-1">{selectedTermCredits} นก.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* List of Courses for Current Term */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold uppercase opacity-70 tracking-wider">รายวิชาที่ลงทะเบียนแล้ว ({filteredCourses.length})</h4>
+                  <button 
+                    onClick={() => openCourseModal()}
+                    className={`flex items-center gap-1 text-xs font-bold py-1.5 px-3 rounded-xl text-white bg-gradient-to-r ${activeTheme.primary} shadow-md transition-all active:scale-95`}
+                  >
+                    <Plus size={14} /> เพิ่มวิชาเรียน
+                  </button>
+                </div>
+
+                {filteredCourses.length === 0 ? (
+                  <div className={`p-8 text-center rounded-3xl border border-dashed ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-slate-300 bg-slate-55/5'} flex flex-col items-center justify-center`}>
+                    <BookOpen size={36} className="opacity-30 mb-2" />
+                    <p className="text-sm font-semibold opacity-75">ไม่มีการลงทะเบียนวิชาในเทอมนี้</p>
+                    <p className="text-xs opacity-50 mt-1">กดปุ่ม "เพิ่มวิชาเรียน" เพื่อเริ่มต้นบันทึกข้อมูลเกรด</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {filteredCourses.map(course => {
+                      // Get Subgroup Display Name
+                      let catName = "";
+                      if (course.category === "core") catName = "วิชาแกน";
+                      else if (course.category === "freeElective") catName = "เลือกเสรี";
+                      else if (course.category.startsWith("general_")) {
+                        const k = course.category.replace("general_", "");
+                        catName = `ศึกษาทั่วไป (${CURRICULUM.general.subgroups[k]?.name.split(" ")[1] || ""})`;
+                      } else if (course.category.startsWith("special_")) {
+                        const k = course.category.replace("special_", "");
+                        catName = `วิชาเฉพาะ (${k === 'compulsory' ? 'บังคับ' : 'เลือก'})`;
+                      }
+
+                      return (
+                        <div 
+                          key={course.id} 
+                          className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all ${
+                            isDarkMode 
+                              ? 'bg-slate-900/60 border-white/5 hover:border-white/10' 
+                              : 'bg-white border-slate-200 shadow-sm'
+                          }`}
+                        >
+                          <div className="space-y-1.5 flex-1 pr-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono tracking-wider bg-white/10 dark:bg-white/5 px-1.5 py-0.5 rounded font-bold">{course.code}</span>
+                              <span className="text-[10px] font-semibold text-zinc-500">{catName}</span>
+                            </div>
+                            <h5 className="text-xs font-bold leading-tight">{course.name}</h5>
+                            <span className="text-[10px] opacity-70 block">{course.credits} หน่วยกิต</span>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm border ${
+                              course.grade === 'A' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                              course.grade === 'B+' || course.grade === 'B' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                              course.grade === 'F' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                            }`}>
+                              {course.grade}
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                              <button 
+                                onClick={() => openCourseModal(course)}
+                                className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button 
+                                onClick={() => deleteCourse(course.id)}
+                                className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* TAB 3: VISUAL ANALYSIS */}
+          {activeTab === 'analysis' && (
+            <>
+              {/* Trend Card */}
+              <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} shadow-md space-y-3`}>
+                <h4 className="text-xs font-bold uppercase opacity-70 tracking-wider flex items-center gap-1">
+                  <TrendingUp size={14} className="text-blue-400" />
+                  แนวโน้มเกรดเฉลี่ยสะสม (GPA Trend)
+                </h4>
+
+                {semesterGpaHistory.length < 2 ? (
+                  <div className="py-12 text-center text-xs opacity-60">
+                    <p>ต้องการข้อมูลรายวิชาอย่างน้อย 2 ภาคเรียนเพื่อสร้างเส้นกราฟสถิติที่แม่นยำ</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Inline SVG Chart representing Gpa Line Trend */}
+                    <div className="w-full h-44 bg-slate-950/20 dark:bg-black/30 rounded-2xl p-2 relative overflow-visible">
+                      <svg viewBox="0 0 100 40" className="w-full h-full overflow-visible">
+                        {/* Draw horizontal baseline guides */}
+                        <line x1="0" y1="5" x2="100" y2="5" stroke="rgba(255,255,255,0.05)" strokeWidth="0.2" />
+                        <line x1="0" y1="15" x2="100" y2="15" stroke="rgba(255,255,255,0.05)" strokeWidth="0.2" />
+                        <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.05)" strokeWidth="0.2" />
+                        <line x1="0" y1="35" x2="100" y2="35" stroke="rgba(255,255,255,0.05)" strokeWidth="0.2" />
+                        
+                        {/* Map GPA (1.0 - 4.0) to SVG coordinates (Y ranges from 5 to 35) */}
+                        {(() => {
+                          const points = semesterGpaHistory.map((h, index) => {
+                            const x = (index / (semesterGpaHistory.length - 1)) * 90 + 5;
+                            // mapping gpa 4.0 -> y: 5, gpa 1.0 -> y: 35
+                            const y = 35 - ((h.gpa - 1) / 3) * 30;
+                            return { x, y, label: h.label, gpa: h.gpa };
+                          });
+
+                          const pathD = points.reduce((acc, p, i) => {
+                            return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+                          }, "");
+
+                          return (
+                            <>
+                              {/* Draw Chart Line */}
+                              <path d={pathD} fill="none" stroke="url(#gradient)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              
+                              {/* Glowing Gradient fill below the line */}
+                              <path 
+                                d={`${pathD} L ${points[points.length-1].x} 35 L ${points[0].x} 35 Z`} 
+                                fill="url(#area-gradient)" 
+                                opacity="0.15" 
+                              />
+
+                              {/* Draw Circles and GPA values */}
+                              {points.map((p, i) => (
+                                <g key={i}>
+                                  <circle cx={p.x} cy={p.y} r="1.8" className="fill-emerald-400 stroke-slate-900 stroke-1" />
+                                  <text x={p.x} y={p.y - 3} fontSize="2.2" textAnchor="middle" fill="#fff" className="font-bold">
+                                    {p.gpa.toFixed(2)}
+                                  </text>
+                                </g>
+                              ))}
+
+                              {/* Define Gradients */}
+                              <defs>
+                                <linearGradient id="gradient" x1="0" y1="0" x2="1" y2="0">
+                                  <stop offset="0%" stopColor="#10b981" />
+                                  <stop offset="100%" stopColor="#3b82f6" />
+                                </linearGradient>
+                                <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#10b981" />
+                                  <stop offset="100%" stopColor="transparent" />
+                                </linearGradient>
+                              </defs>
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
+
+                    {/* Timeline Legend */}
+                    <div className="grid grid-cols-4 gap-1 text-[8px] text-center opacity-75">
+                      {semesterGpaHistory.map((h, i) => (
+                        <div key={i} className="truncate bg-white/5 p-1.5 rounded-lg border border-white/5">
+                          <span className="block font-bold">{h.label}</span>
+                          <span className="text-emerald-400 font-bold text-[9px] mt-0.5 block">{h.gpa}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Curriculum Compliance Check */}
+              <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} shadow-md space-y-3`}>
+                <h4 className="text-xs font-bold uppercase opacity-70 tracking-wider flex items-center gap-1">
+                  <Info size={14} className="text-amber-400" />
+                  สรุปการตรวจหลักสูตรปริญญาตรี (133 นก.)
+                </h4>
+
+                <div className="space-y-2.5 text-xs">
+                  {/* General Check */}
+                  <div className="flex items-start justify-between pb-2 border-b border-white/5">
+                    <div>
+                      <span className="font-semibold block">1. หมวดวิชาศึกษาทั่วไป</span>
+                      <p className="text-[10px] opacity-60">เก็บกลุ่มย่อยไทย ต่างประเทศ วิทย์ คณิต สังคม มนุษยศาสตร์ครบเกณฑ์ขั้นต่ำ</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${calculatedStats.isGeneralSubgroupsOk && calculatedStats.creditsByCategory.general >= 33 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                      {calculatedStats.isGeneralSubgroupsOk && calculatedStats.creditsByCategory.general >= 33 ? "ผ่านเกณฑ์" : "ยังขาดหน่วยกิต"}
+                    </span>
+                  </div>
+
+                  {/* Core Check */}
+                  <div className="flex items-start justify-between pb-2 border-b border-white/5">
+                    <div>
+                      <span className="font-semibold block">2. กลุ่มวิชาแกน</span>
+                      <p className="text-[10px] opacity-60">เรียนรู้ทฤษฎีพื้นฐานของสาขา 27 หน่วยกิต</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${calculatedStats.creditsByCategory.core >= 27 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                      {calculatedStats.creditsByCategory.core >= 27 ? "ผ่านเกณฑ์" : "ยังขาดหน่วยกิต"}
+                    </span>
+                  </div>
+
+                  {/* Special Check */}
+                  <div className="flex items-start justify-between pb-2 border-b border-white/5">
+                    <div>
+                      <span className="font-semibold block">3. กลุ่มวิชาเฉพาะ (บังคับ + เลือก)</span>
+                      <p className="text-[10px] opacity-60">วิชาชีพบังคับขั้นต่ำ 52 นก. และวิชาชีพเลือก 15 นก.</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${calculatedStats.isSpecialSubgroupsOk && calculatedStats.creditsByCategory.special >= 67 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                      {calculatedStats.isSpecialSubgroupsOk && calculatedStats.creditsByCategory.special >= 67 ? "ผ่านเกณฑ์" : "ยังขาดหน่วยกิต"}
+                    </span>
+                  </div>
+
+                  {/* Free Elective Check */}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="font-semibold block">4. หมวดเลือกเสรี</span>
+                      <p className="text-[10px] opacity-60">เรียนรู้ข้ามศาสตร์ตามความชอบอิสระ 6 หน่วยกิต</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${calculatedStats.creditsByCategory.freeElective >= 6 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                      {calculatedStats.creditsByCategory.freeElective >= 6 ? "ผ่านเกณฑ์" : "ยังขาดหน่วยกิต"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* TAB 4: SETTINGS & CUSTOMIZATION */}
+          {activeTab === 'settings' && (
+            <>
+              {/* Profile Card */}
+              <div className={`p-4 rounded-3xl border flex items-center gap-3.5 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${activeTheme.primary} flex items-center justify-center text-white font-black text-lg shadow-md`}>
+                  DDT
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-bold truncate">นักศึกษาคณะไอที-ดิจิทัล</h4>
+                  <p className="text-xs opacity-60 truncate">{userEmail}</p>
+                  <p className="text-[10px] font-semibold text-emerald-400 mt-0.5">สถานะแอป: เชื่อมต่อผ่าน Supabase Local</p>
+                </div>
+              </div>
+
+              {/* Theme Customization Block */}
+              <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} space-y-4 shadow-sm`}>
+                <h4 className="text-xs font-bold uppercase opacity-70 tracking-wider">ปรับแต่งธีม (Theme Customization)</h4>
+                
+                <div className="grid grid-cols-1 gap-2.5">
+                  {Object.keys(THEMES).map(key => {
+                    const t = THEMES[key];
+                    return (
+                      <button 
+                        key={key}
+                        onClick={() => setCurrentThemeKey(key)}
+                        className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                          currentThemeKey === key 
+                            ? `border-emerald-500 bg-emerald-500/5 shadow-inner` 
+                            : 'border-white/5 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`w-4 h-4 rounded-full bg-gradient-to-r ${t.primary} inline-block shadow-sm`}></span>
+                          <span className="text-xs font-semibold">{t.name}</span>
+                        </div>
+                        {currentThemeKey === key && <CheckCircle size={15} className="text-emerald-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Data Actions */}
+              <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} space-y-3`}>
+                <h4 className="text-xs font-bold uppercase opacity-70 tracking-wider text-red-500">จัดการข้อมูลและบัญชีผู้ใช้</h4>
+                
+                <button 
+                  onClick={() => {
+                    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการคืนค่ารายวิชาเริ่มต้นเพื่อเริ่มต้นทดสอบใหม่? รายวิชาที่เพิ่มจะหายทั้งหมด")) {
+                      setCourses(INITIAL_COURSES);
+                    }
+                  }}
+                  className="w-full text-left p-3 rounded-2xl border border-red-500/20 text-xs text-red-400 hover:bg-red-500/5 flex items-center justify-between"
+                >
+                  <span>คืนค่ารายวิชาเริ่มต้น (Reset Demo Data)</span>
+                  <X size={14} />
+                </button>
+
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left p-3 rounded-2xl border border-rose-500/20 text-xs text-rose-400 hover:bg-rose-500/5 flex items-center justify-between"
+                >
+                  <span>ออกจากระบบผู้ใช้ (Logout)</span>
+                  <LogOut size={14} />
+                </button>
+              </div>
+            </>
+          )}
+
+        </main>
+
+        {/* Dynamic & Beautiful Footer Navigation */}
+        <footer className={`px-4 py-2 border-t backdrop-blur-xl ${isDarkMode ? 'bg-slate-900/40 border-white/5' : 'bg-white/40 border-slate-200'} flex justify-around items-center`}>
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all ${activeTab === 'dashboard' ? `${activeTheme.text} scale-105 font-bold` : 'opacity-50'}`}
+          >
+            <GraduationCap size={18} />
+            <span className="text-[9px]">Dashboard</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('courses')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all ${activeTab === 'courses' ? `${activeTheme.text} scale-105 font-bold` : 'opacity-50'}`}
+          >
+            <BookOpen size={18} />
+            <span className="text-[9px]">รายวิชา</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('analysis')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all ${activeTab === 'analysis' ? `${activeTheme.text} scale-105 font-bold` : 'opacity-50'}`}
+          >
+            <TrendingUp size={18} />
+            <span className="text-[9px]">ประเมินผล</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all ${activeTab === 'settings' ? `${activeTheme.text} scale-105 font-bold` : 'opacity-50'}`}
+          >
+            <Palette size={18} />
+            <span className="text-[9px]">ปรับแต่ง</span>
+          </button>
+        </footer>
+
+        {/* Bottom Home Indicator bar for iPhone simulation */}
+        <div className="h-6 flex justify-center items-center pb-2">
+          <div className="w-32 h-1 bg-slate-700 rounded-full"></div>
+        </div>
+
+        {/* ================= MODAL: ADD / EDIT COURSE ================= */}
+        {isModalOpen && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col justify-end">
+            <div className={`w-full rounded-t-[35px] border-t p-6 space-y-4 max-h-[90%] overflow-y-auto ${
+              isDarkMode 
+                ? 'bg-slate-950 border-white/10 text-white' 
+                : 'bg-white border-slate-200 text-slate-800'
+            }`}>
+              <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                <h3 className="text-base font-bold flex items-center gap-1.5">
+                  <FileText size={16} className={activeTheme.text} />
+                  {editingCourse ? "แก้ไขข้อมูลรายวิชา" : "เพิ่มรายวิชาเรียนใหม่"}
+                </h3>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1.5 rounded-full bg-white/10"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Form Input fields */}
+              <div className="space-y-3.5 text-xs">
+                <div>
+                  <label className="font-semibold block mb-1">รหัสวิชา (เช่น DDT301)</label>
+                  <input 
+                    type="text" 
+                    placeholder="DDT301"
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value)}
+                    className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none focus:border-blue-500 ${isDarkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-300 text-slate-800'}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1">ชื่อวิชาเรียน</label>
+                  <input 
+                    type="text" 
+                    placeholder="เช่น Advanced Web Application"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none focus:border-blue-500 ${isDarkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-50 border-slate-300 text-slate-800'}`}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold block mb-1">จำนวนหน่วยกิต</label>
+                    <select 
+                      value={formCredits}
+                      onChange={(e) => setFormCredits(Number(e.target.value))}
+                      className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-300'}`}
+                    >
+                      <option value={1}>1 หน่วยกิต</option>
+                      <option value={2}>2 หน่วยกิต</option>
+                      <option value={3}>3 หน่วยกิต</option>
+                      <option value={4}>4 หน่วยกิต</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1">ผลการเรียน (เกรด)</label>
+                    <select 
+                      value={formGrade}
+                      onChange={(e) => setFormGrade(e.target.value)}
+                      className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-300'}`}
+                    >
+                      <option value="A">A (4.0)</option>
+                      <option value="B+">B+ (3.5)</option>
+                      <option value="B">B (3.0)</option>
+                      <option value="C+">C+ (2.5)</option>
+                      <option value="C">C (2.0)</option>
+                      <option value="D+">D+ (1.5)</option>
+                      <option value="D">D (1.0)</option>
+                      <option value="F">F (0.0)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1">หมวดหมู่และกลุ่มรายวิชาหลักสูตร</label>
+                  <select 
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-300'}`}
+                  >
+                    {/* General Ed Subgroups */}
+                    <optgroup label="หมวดศึกษาทั่วไป (ต้องการ 33 หน่วยกิต)">
+                      <option value="general_thai">1.1 กลุ่มภาษาไทย</option>
+                      <option value="general_foreign">1.2 กลุ่มภาษาต่างประเทศ</option>
+                      <option value="general_science">1.3 กลุ่มวิทยาศาสตร์และนวัตกรรม</option>
+                      <option value="general_math">1.4 กลุ่มคณิตศาสตร์</option>
+                      <option value="general_social">1.5 กลุ่มสังคมศาสตร์</option>
+                      <option value="general_humanities">1.6 กลุ่มมนุษยศาสตร์</option>
+                    </optgroup>
+
+                    {/* Core */}
+                    <optgroup label="กลุ่มวิชาแกน (ต้องการ 27 หน่วยกิต)">
+                      <option value="core">2.1 รายวิชาแกนสาขาออกแบบดิจิทัล</option>
+                    </optgroup>
+
+                    {/* Special */}
+                    <optgroup label="กลุ่มวิชาเฉพาะ (ต้องการ 67 หน่วยกิต)">
+                      <option value="special_compulsory">3.1 วิชาชีพบังคับ (52 นก.)</option>
+                      <option value="special_elective">3.2 วิชาชีพเลือก (15 นก.)</option>
+                    </optgroup>
+
+                    {/* Free */}
+                    <optgroup label="หมวดวิชาเลือกเสรี (ต้องการ 6 หน่วยกิต)">
+                      <option value="freeElective">4.1 รายวิชาเลือกเสรี</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label className="font-semibold block mb-1">บันทึกที่ชั้นปี</label>
+                    <select 
+                      value={formYear}
+                      onChange={(e) => setFormYear(Number(e.target.value))}
+                      className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-300'}`}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(y => (
+                        <option key={y} value={y}>ชั้นปีที่ {y}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1">ภาคเรียน</label>
+                    <select 
+                      value={formTerm}
+                      onChange={(e) => setFormTerm(e.target.value)}
+                      className={`w-full py-2.5 px-3 rounded-xl border focus:outline-none ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-300'}`}
+                    >
+                      <option value="1">เทอม 1</option>
+                      <option value="2">เทอม 2</option>
+                      <option value="Summer">ฤดูร้อน (Summer)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save & Cancel CTA */}
+              <div className="pt-4 flex gap-3">
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-xs border text-center ${
+                    isDarkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-slate-100 border-slate-300'
+                  }`}
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  onClick={saveCourse}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-xs text-white text-center bg-gradient-to-r ${activeTheme.primary} shadow-md`}
+                >
+                  บันทึกข้อมูล
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
