@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#071A30">
-  <meta name="description" content="Grade Track DDT — ระบบติดตามผลการเรียน เกรดเฉลี่ย หลักสูตร และแนวโน้มการศึกษาแบบ Local-first">
+  <meta name="description" content="Grade Track DDT — ระบบติดตามผลการเรียน เกรดเฉลี่ย หลักสูตร และแนวโน้มการศึกษา พร้อม Cloud Sync">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -158,6 +158,30 @@
     .btn-ghost { background: transparent; }
     .btn-small { min-height: 34px; padding: 7px 10px; border-radius: 11px; font-size: 12px; }
 
+    .sync-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 9px;
+      color: var(--mist-gray);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    .sync-row .btn { margin-left: auto; }
+    .sync-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--mist-gray);
+      box-shadow: 0 0 0 4px rgba(160,181,202,.1);
+    }
+    .sync-dot[data-state="connected"] { background: var(--success); box-shadow: 0 0 0 4px rgba(99,214,174,.12); }
+    .sync-dot[data-state="syncing"] { background: var(--warning); box-shadow: 0 0 0 4px rgba(249,198,111,.12); animation: syncPulse 1.25s ease-in-out infinite; }
+    .sync-dot[data-state="error"] { background: var(--danger); box-shadow: 0 0 0 4px rgba(255,124,140,.12); }
+    @keyframes syncPulse { 50% { opacity: .42; transform: scale(.8); } }
+
     .profile-strip {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(240px, .8fr);
@@ -203,6 +227,7 @@
     }
     .notice-card h2 { margin: 0; font-size: 14px; }
     .notice-card p { margin: 4px 0 0; color: var(--mist-gray); font-size: 11px; line-height: 1.55; }
+    @media (max-width: 520px) { .sync-row .btn { width: 100%; margin-left: 0; } }
 
     .stats-grid {
       display: grid;
@@ -732,6 +757,7 @@
     <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19h11a4.5 4.5 0 0 0 .6-9A6.5 6.5 0 0 0 5.7 8.2 5.5 5.5 0 0 0 6.5 19Z"/><path d="M8 14l2 2 4-4"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7L20 14"/><path d="M20 7v4h-4"/></symbol>
   </svg>
 
@@ -741,7 +767,7 @@
         <div class="brand-mark"><svg><use href="#i-logo"></use></svg></div>
         <div style="min-width:0">
           <h1>Grade Track DDT</h1>
-          <p>ระบบตรวจสอบและวางแผนผลการเรียน — เปิดใช้ได้ทันที ไม่ต้องเข้าสู่ระบบ</p>
+          <p>ระบบตรวจสอบและวางแผนผลการเรียน — แชร์ข้อมูลข้ามอุปกรณ์ได้โดยไม่ต้อง Login</p>
         </div>
       </div>
       <div class="top-actions">
@@ -766,10 +792,15 @@
         </div>
       </article>
       <article class="notice-card glass">
-        <div class="notice-icon"><svg><use href="#i-info"></use></svg></div>
-        <div>
-          <h2>ข้อมูลเก็บไว้ในอุปกรณ์นี้</h2>
-          <p>ระบบบันทึกอัตโนมัติด้วย Local Storage และไม่มีหน้า Login ควร Export สำรองข้อมูลก่อนล้างแคชเบราว์เซอร์</p>
+        <div class="notice-icon"><svg><use href="#i-cloud"></use></svg></div>
+        <div style="min-width:0;flex:1">
+          <h2 id="storageTitle">Cloud Sync</h2>
+          <p id="storageNote">เชื่อม Firebase Realtime Database เพื่อให้ทุกคนที่เปิดลิงก์เดียวกันเห็นชื่อ รายวิชา และเกรดชุดเดียวกัน</p>
+          <div class="sync-row">
+            <span class="sync-dot" id="syncDot" data-state="local"></span>
+            <span id="syncStatus">ยังไม่ได้เชื่อม Cloud — กำลังใช้ข้อมูลในอุปกรณ์นี้</span>
+            <button class="btn btn-small btn-ghost" id="shareLinkBtn" type="button"><svg><use href="#i-cloud"></use></svg>คัดลอกลิงก์แชร์</button>
+          </div>
         </div>
       </article>
     </section>
@@ -870,7 +901,7 @@
       </aside>
     </section>
 
-    <footer class="footer">Grade Track DDT • Single-file HTML • เกณฑ์เกียรตินิยมและสถานภาพอาจแตกต่างตามข้อบังคับของแต่ละสถาบัน โปรดตรวจสอบกับมหาวิทยาลัยอีกครั้ง</footer>
+    <footer class="footer">Grade Track DDT • Single-file HTML + Firebase Cloud Sync • เกณฑ์เกียรตินิยมและสถานภาพอาจแตกต่างตามข้อบังคับของแต่ละสถาบัน โปรดตรวจสอบกับมหาวิทยาลัยอีกครั้ง</footer>
   </main>
 
   <div class="modal-backdrop" id="courseModal" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle">
@@ -888,7 +919,7 @@
           <div class="field"><label for="courseGrade">ผลการเรียน</label><select class="select" id="courseGrade" required></select></div>
           <div class="field"><label for="courseCategory">หมวดวิชา</label><select class="select" id="courseCategory" required></select></div>
           <div class="field"><label for="courseYear">ชั้นปี</label><select class="select" id="courseYear" required></select></div>
-          <div class="field"><label for="courseTerm">ภาคเรียน</label><select class="select" id="courseTerm" required><option value="1">เทอม 1</option><option value="2">เทอม 2</option><option value="Summer">Summer</option></select></div>
+          <div class="field"><label for="courseTerm">ภาคเรียน</label><select class="select" id="courseTerm" required><option value="1">เทอม 1</option><option value="2">เทอม 2</option><option value="3">เทอม 3</option></select></div>
           <label class="checkbox-row span-2"><input type="checkbox" id="courseRepeat"> เป็นรายวิชาเรียนซ้ำ / Re-grade</label>
           <div class="field span-2"><label for="courseNote">หมายเหตุ (ไม่บังคับ)</label><textarea class="control" id="courseNote" maxlength="300" placeholder="เช่น รายวิชาเทียบโอน หรือหมายเหตุเพิ่มเติม"></textarea></div>
         </div>
@@ -952,6 +983,24 @@
           </div>
         </div>
         <div class="settings-section">
+          <h3>Cloud Sync สำหรับลิงก์ที่แชร์ร่วมกัน</h3>
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="cloudDatabaseUrl">Firebase Realtime Database URL</label>
+              <input class="control" id="cloudDatabaseUrl" type="url" inputmode="url" placeholder="https://ชื่อโปรเจกต์-default-rtdb.asia-southeast1.firebasedatabase.app">
+            </div>
+            <div class="field span-2">
+              <label for="cloudRoomKey">ชื่อห้องข้อมูลร่วมกัน</label>
+              <input class="control" id="cloudRoomKey" maxlength="80" pattern="[A-Za-z0-9_-]+" placeholder="เช่น ddt-6710302002">
+            </div>
+          </div>
+          <div class="backup-actions" style="margin-top:12px">
+            <button class="btn" id="testCloudBtn" type="button"><svg><use href="#i-cloud"></use></svg>ทดสอบการเชื่อมต่อ</button>
+            <button class="btn" id="copyShareLinkSettingsBtn" type="button"><svg><use href="#i-download"></use></svg>คัดลอกลิงก์แชร์</button>
+          </div>
+          <p class="helper">เมื่อเชื่อมสำเร็จ การแก้ชื่อ รายวิชา เกรด และเกณฑ์จะบันทึกขึ้น Cloud อัตโนมัติ ทุกคนที่เปิดลิงก์เดียวกันจะเห็นข้อมูลเดียวกันภายในไม่กี่วินาที โดยระบบใช้แบบ Last write wins และไม่มี Login ดังนั้นผู้ที่มีลิงก์สามารถแก้ไขข้อมูลได้</p>
+        </div>
+        <div class="settings-section">
           <h3>จัดการข้อมูล</h3>
           <button class="btn btn-danger" id="resetBtn" type="button"><svg><use href="#i-refresh"></use></svg>คืนค่าข้อมูลตัวอย่าง</button>
           <p class="helper">การคืนค่าจะลบข้อมูลที่แก้ไขในอุปกรณ์นี้และนำชุดข้อมูลสาธิตกลับมา</p>
@@ -970,8 +1019,19 @@
   (() => {
     "use strict";
 
-    const STORAGE_KEY = "gradeTrackDDT_single_v4";
+    const STORAGE_KEY = "gradeTrackDDT_single_v5";
     const LEGACY_COURSES_KEY = "nong2dekaokbab_courses_v2";
+    const SYNC_CONFIG_KEY = "gradeTrackDDT_sync_v1";
+    const APP_VERSION = 5;
+    const POLL_INTERVAL_MS = 5000;
+    const ACADEMIC_TERMS = Array.from({ length: 4 }, (_, yearIndex) =>
+      ["1", "2", "3"].map(term => ({
+        key: `${yearIndex + 1}|${term}`,
+        year: yearIndex + 1,
+        term,
+        label: `ปี ${yearIndex + 1} • เทอม ${term}`
+      }))
+    ).flat();
 
     const GRADE_POINTS = { A: 4, "B+": 3.5, B: 3, "C+": 2.5, C: 2, "D+": 1.5, D: 1, F: 0 };
     const GRADE_OPTIONS = ["A", "B+", "B", "C+", "C", "D+", "D", "F", "S", "U", "W", "I"];
@@ -1049,8 +1109,8 @@
     const esc = value => String(value ?? "").replace(/[&<>'"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));
     const fmt = value => Number.isFinite(value) ? value.toFixed(2) : "0.00";
     const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
-    const termRank = term => term === "1" ? 1 : term === "2" ? 2 : 3;
-    const termLabel = (year, term) => `ปี ${year} • ${term === "Summer" ? "Summer" : `เทอม ${term}`}`;
+    const termRank = term => clamp(parseInt(term, 10) || 1, 1, 3);
+    const termLabel = (year, term) => `ปี ${year} • เทอม ${term}`;
     const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`;
 
     function normalizeCourse(raw) {
@@ -1061,8 +1121,8 @@
         credits: clamp(Number(raw.credits) || 0, 0, 30),
         grade: GRADE_OPTIONS.includes(String(raw.grade)) ? String(raw.grade) : "I",
         category: CATEGORIES[raw.category] ? raw.category : "core",
-        year: clamp(parseInt(raw.year, 10) || 1, 1, 12),
-        term: ["1","2","Summer"].includes(String(raw.term)) ? String(raw.term) : "1",
+        year: clamp(parseInt(raw.year, 10) || 1, 1, 4),
+        term: ["1","2","3"].includes(String(raw.term)) ? String(raw.term) : "1",
         repeat: Boolean(raw.repeat),
         note: String(raw.note || "").slice(0, 300)
       };
@@ -1089,17 +1149,226 @@
       return base;
     }
 
+    function normalizeSharedState(candidate, preserveSelectedSemester = "") {
+      if (!candidate || typeof candidate !== "object" || !Array.isArray(candidate.courses)) return null;
+      return {
+        profile: { ...clone(DEFAULT_PROFILE), ...(candidate.profile || {}) },
+        rules: deepMergeRules(candidate.rules),
+        courses: candidate.courses.map(normalizeCourse),
+        selectedSemester: preserveSelectedSemester || String(candidate.selectedSemester || "")
+      };
+    }
+
+    function sanitizeDatabaseUrl(value) {
+      const url = String(value || "").trim().replace(/\/+$/, "");
+      if (!url) return "";
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "https:") return "";
+        return parsed.origin + parsed.pathname.replace(/\/+$/, "");
+      } catch {
+        return "";
+      }
+    }
+
+    function sanitizeRoomKey(value) {
+      return String(value || "").trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80) || "main";
+    }
+
+    function loadSyncConfig() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY) || "{}") || {}; } catch {}
+      const params = new URLSearchParams(location.search);
+      const fromUrl = params.get("db");
+      const roomFromUrl = params.get("room");
+      const config = {
+        databaseUrl: sanitizeDatabaseUrl(fromUrl || saved.databaseUrl || ""),
+        roomKey: sanitizeRoomKey(roomFromUrl || saved.roomKey || "main")
+      };
+      localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config));
+      return config;
+    }
+
+    function saveSyncConfig(config, reflectInUrl = true) {
+      syncConfig = {
+        databaseUrl: sanitizeDatabaseUrl(config.databaseUrl),
+        roomKey: sanitizeRoomKey(config.roomKey)
+      };
+      localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig));
+      if (reflectInUrl && /^https?:$/.test(location.protocol)) {
+        const url = new URL(location.href);
+        if (syncConfig.databaseUrl) {
+          url.searchParams.set("db", syncConfig.databaseUrl);
+          url.searchParams.set("room", syncConfig.roomKey);
+        } else {
+          url.searchParams.delete("db");
+          url.searchParams.delete("room");
+        }
+        history.replaceState(null, "", url);
+      }
+    }
+
+    function cloudEndpoint() {
+      if (!syncConfig.databaseUrl) return "";
+      return `${syncConfig.databaseUrl}/grade-track-ddt/${encodeURIComponent(syncConfig.roomKey)}.json`;
+    }
+
+    function sharedPayload(updatedAt = Date.now()) {
+      return {
+        app: "Grade Track DDT",
+        version: APP_VERSION,
+        profile: clone(state.profile),
+        rules: clone(state.rules),
+        courses: clone(state.courses),
+        meta: {
+          updatedAt,
+          deviceId,
+          roomKey: syncConfig.roomKey
+        }
+      };
+    }
+
+    function setSyncStatus(kind, message) {
+      const dot = document.getElementById("syncDot");
+      const status = document.getElementById("syncStatus");
+      if (dot) dot.dataset.state = kind;
+      if (status) status.textContent = message;
+      const title = document.getElementById("storageTitle");
+      const note = document.getElementById("storageNote");
+      if (title) title.textContent = syncConfig.databaseUrl ? "Shared Cloud Sync" : "Local Storage";
+      if (note) note.textContent = syncConfig.databaseUrl
+        ? "ชื่อ รายวิชา เกรด และเกณฑ์จะซิงก์ให้ทุกคนที่เปิดลิงก์เดียวกัน"
+        : "ข้อมูลยังเก็บในอุปกรณ์นี้เท่านั้น ให้ตั้งค่า Firebase เพื่อแชร์การเปลี่ยนแปลงข้ามอุปกรณ์";
+    }
+
+    function scheduleCloudSave() {
+      if (!cloudReady || applyingRemote || !cloudEndpoint()) return;
+      clearTimeout(cloudSaveTimer);
+      localMutationAt = Date.now();
+      cloudSaveTimer = setTimeout(() => pushCloudState(), 500);
+    }
+
+    async function pushCloudState({ silent = false } = {}) {
+      const endpoint = cloudEndpoint();
+      if (!endpoint) return false;
+      const updatedAt = Math.max(Date.now(), localMutationAt);
+      setSyncStatus("syncing", "กำลังบันทึกการเปลี่ยนแปลงขึ้น Cloud…");
+      try {
+        const response = await fetch(endpoint, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sharedPayload(updatedAt))
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        lastCloudUpdatedAt = updatedAt;
+        cloudReady = true;
+        setSyncStatus("connected", `เชื่อม Cloud แล้ว • บันทึกล่าสุด ${new Date(updatedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`);
+        if (!silent) toast("บันทึกข้อมูลขึ้น Cloud แล้ว");
+        return true;
+      } catch (error) {
+        console.warn("Cloud save failed", error);
+        setSyncStatus("error", "บันทึก Cloud ไม่สำเร็จ — ตรวจ URL และ Firebase Rules");
+        if (!silent) toast("บันทึก Cloud ไม่สำเร็จ", "danger");
+        return false;
+      }
+    }
+
+    async function pullCloudState({ initial = false, silent = true } = {}) {
+      const endpoint = cloudEndpoint();
+      if (!endpoint) return false;
+      if (initial) setSyncStatus("syncing", "กำลังเชื่อมต่อข้อมูลร่วมกัน…");
+      try {
+        const response = await fetch(`${endpoint}${endpoint.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const remote = await response.json();
+
+        if (!remote) {
+          cloudReady = true;
+          setSyncStatus("syncing", "ยังไม่มีข้อมูลบน Cloud — กำลังอัปโหลดข้อมูลปัจจุบัน…");
+          return pushCloudState({ silent: true });
+        }
+
+        const normalized = normalizeSharedState(remote, state.selectedSemester);
+        if (!normalized) throw new Error("รูปแบบข้อมูลบน Cloud ไม่ถูกต้อง");
+        const remoteUpdatedAt = Number(remote.meta?.updatedAt) || 0;
+
+        if (initial || (remoteUpdatedAt > lastCloudUpdatedAt && remoteUpdatedAt > localMutationAt)) {
+          applyingRemote = true;
+          state = normalized;
+          lastCloudUpdatedAt = remoteUpdatedAt || Date.now();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          renderAll();
+          applyingRemote = false;
+          if (!initial && !silent) toast("อัปเดตข้อมูลล่าสุดจาก Cloud แล้ว");
+        }
+
+        cloudReady = true;
+        setSyncStatus("connected", `เชื่อม Cloud แล้ว • ห้อง ${syncConfig.roomKey}`);
+        return true;
+      } catch (error) {
+        console.warn("Cloud load failed", error);
+        cloudReady = false;
+        setSyncStatus("error", "เชื่อม Cloud ไม่สำเร็จ — แอปยังบันทึกในอุปกรณ์นี้");
+        if (!silent) toast("เชื่อม Firebase ไม่สำเร็จ", "danger");
+        return false;
+      }
+    }
+
+    async function initCloudSync({ force = false } = {}) {
+      clearInterval(cloudPollTimer);
+      clearTimeout(cloudSaveTimer);
+      cloudReady = false;
+      if (!syncConfig.databaseUrl) {
+        setSyncStatus("local", "ยังไม่ได้เชื่อม Cloud — กำลังใช้ข้อมูลในอุปกรณ์นี้");
+        return false;
+      }
+      const ok = await pullCloudState({ initial: true, silent: true });
+      if (ok || force) {
+        cloudPollTimer = setInterval(() => {
+          if (document.visibilityState === "visible" && navigator.onLine) pullCloudState({ silent: true });
+        }, POLL_INTERVAL_MS);
+      }
+      return ok;
+    }
+
+    function buildShareUrl() {
+      if (!syncConfig.databaseUrl) throw new Error("กรุณากรอก Firebase Database URL ก่อน");
+      if (!/^https?:$/.test(location.protocol)) throw new Error("ต้องอัปโหลดไฟล์ขึ้นเว็บ HTTPS ก่อนจึงจะสร้างลิงก์แชร์ได้");
+      const url = new URL(location.href);
+      url.searchParams.set("db", syncConfig.databaseUrl);
+      url.searchParams.set("room", syncConfig.roomKey);
+      return url.toString();
+    }
+
+    async function copyText(value) {
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch {
+        const input = document.createElement("textarea");
+        input.value = value;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        input.remove();
+      }
+    }
+
+    async function copyShareLink() {
+      try {
+        await copyText(buildShareUrl());
+        toast("คัดลอกลิงก์แชร์แล้ว");
+      } catch (error) {
+        toast(error.message, "danger");
+      }
+    }
+
     function loadState() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        if (saved && Array.isArray(saved.courses)) {
-          return {
-            profile: { ...clone(DEFAULT_PROFILE), ...(saved.profile || {}) },
-            rules: deepMergeRules(saved.rules),
-            courses: saved.courses.map(normalizeCourse),
-            selectedSemester: String(saved.selectedSemester || "")
-          };
-        }
+        const normalized = normalizeSharedState(saved);
+        if (normalized) return normalized;
       } catch (error) { console.warn("Cannot load saved state", error); }
 
       try {
@@ -1115,9 +1384,19 @@
     let state = loadState();
     let filterState = { search: "", term: "all", category: "all" };
     let deferredInstallPrompt = null;
+    let syncConfig = loadSyncConfig();
+    let cloudReady = false;
+    let applyingRemote = false;
+    let cloudSaveTimer = null;
+    let cloudPollTimer = null;
+    let lastCloudUpdatedAt = 0;
+    let localMutationAt = 0;
+    const deviceId = localStorage.getItem("gradeTrackDDT_deviceId") || uid();
+    localStorage.setItem("gradeTrackDDT_deviceId", deviceId);
 
     function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!applyingRemote) scheduleCloudSave();
     }
 
     function calculate() {
@@ -1129,7 +1408,10 @@
       let hasRepeat = false;
       const creditsByCategory = Object.fromEntries(Object.keys(CATEGORIES).map(key => [key, 0]));
       const groups = { general: 0, core: 0, special: 0, freeElective: 0 };
-      const semestersMap = new Map();
+      const semestersMap = new Map(ACADEMIC_TERMS.map(semester => [
+        semester.key,
+        { ...semester, points: 0, credits: 0, earned: 0, count: 0 }
+      ]));
 
       for (const course of state.courses) {
         attemptedCredits += course.credits;
@@ -1159,20 +1441,26 @@
 
       const gpa = gpaCredits ? totalPoints / gpaCredits : 0;
       const semesters = [...semestersMap.values()]
-        .map(sem => ({ ...sem, gpa: sem.credits ? sem.points / sem.credits : 0, label: termLabel(sem.year, sem.term) }))
+        .map(sem => ({
+          ...sem,
+          gpa: sem.credits ? sem.points / sem.credits : 0,
+          hasData: sem.credits > 0 || sem.count > 0,
+          label: termLabel(sem.year, sem.term)
+        }))
         .sort((a,b) => a.year - b.year || termRank(a.term) - termRank(b.term));
+      const trendSemesters = semesters.filter(sem => sem.credits > 0);
 
       let slope = 0;
-      if (semesters.length >= 2) {
-        const n = semesters.length;
-        const sumX = semesters.reduce((s,_,i) => s + i, 0);
-        const sumY = semesters.reduce((s,x) => s + x.gpa, 0);
-        const sumXY = semesters.reduce((s,x,i) => s + i * x.gpa, 0);
-        const sumX2 = semesters.reduce((s,_,i) => s + i * i, 0);
+      if (trendSemesters.length >= 2) {
+        const n = trendSemesters.length;
+        const sumX = trendSemesters.reduce((s,_,i) => s + i, 0);
+        const sumY = trendSemesters.reduce((s,x) => s + x.gpa, 0);
+        const sumXY = trendSemesters.reduce((s,x,i) => s + i * x.gpa, 0);
+        const sumX2 = trendSemesters.reduce((s,_,i) => s + i * i, 0);
         const denominator = n * sumX2 - sumX * sumX;
         slope = denominator ? (n * sumXY - sumX * sumY) / denominator : 0;
       }
-      const trend = semesters.length < 2 ? "insufficient" : slope > .05 ? "up" : slope < -.05 ? "down" : "stable";
+      const trend = trendSemesters.length < 2 ? "insufficient" : slope > .05 ? "up" : slope < -.05 ? "down" : "stable";
 
       const r = state.rules;
       let academic = { label: "ยังไม่มีข้อมูล", tone: "info", note: "เพิ่มรายวิชาที่มีผลเกรดเพื่อประเมินสถานภาพ" };
@@ -1223,7 +1511,7 @@
         && curriculumItems.special.done
         && curriculumItems.freeElective.done;
 
-      return { totalPoints, gpaCredits, earnedCredits, attemptedCredits, gpa, hasF, hasRepeat, creditsByCategory, groups, semesters, slope, trend, academic, honor, honorConditions, curriculumItems };
+      return { totalPoints, gpaCredits, earnedCredits, attemptedCredits, gpa, hasF, hasRepeat, creditsByCategory, groups, semesters, trendSemesters, slope, trend, academic, honor, honorConditions, curriculumItems };
     }
 
     function toneClass(tone) { return ["success","warning","danger","info"].includes(tone) ? tone : "info"; }
@@ -1249,9 +1537,10 @@
         : `<option value="">ยังไม่มีภาคเรียน</option>`;
       if (calc.semesters.length) {
         const valid = calc.semesters.some(s => s.key === oldValue);
-        state.selectedSemester = valid ? oldValue : calc.semesters.at(-1).key;
+        const latestWithData = [...calc.semesters].reverse().find(s => s.hasData);
+        state.selectedSemester = valid ? oldValue : (latestWithData?.key || calc.semesters[0].key);
         semSelect.value = state.selectedSemester;
-        const selected = calc.semesters.find(s => s.key === state.selectedSemester) || calc.semesters.at(-1);
+        const selected = calc.semesters.find(s => s.key === state.selectedSemester) || calc.semesters[0];
         document.getElementById("semesterGpa").textContent = fmt(selected.gpa);
       } else {
         state.selectedSemester = "";
@@ -1282,16 +1571,16 @@
         insufficient: ["ข้อมูลยังไม่พอ", "info", "info"]
       };
       const [label, tone, iconName] = map[calc.trend];
-      summary.innerHTML = `<span class="badge ${tone}">${icon(iconName)}${label}</span>${calc.semesters.length >= 2 ? `<span class="badge info">Slope ${calc.slope >= 0 ? "+" : ""}${calc.slope.toFixed(2)}</span>` : ""}`;
+      summary.innerHTML = `<span class="badge ${tone}">${icon(iconName)}${label}</span>${calc.trendSemesters.length >= 2 ? `<span class="badge info">Slope ${calc.slope >= 0 ? "+" : ""}${calc.slope.toFixed(2)}</span>` : ""}`;
 
       const chart = document.getElementById("trendChart");
-      if (!calc.semesters.length) {
+      if (!calc.trendSemesters.length) {
         chart.innerHTML = `<div class="empty-state" style="height:100%;display:grid;place-content:center">${icon("trend")}<strong>ยังไม่มีข้อมูลแนวโน้ม</strong><span>เพิ่มรายวิชาอย่างน้อยหนึ่งภาคเรียน</span></div>`;
       } else {
         const width = 680, height = 240, left = 42, right = 20, top = 18, bottom = 42;
         const plotW = width - left - right, plotH = height - top - bottom;
-        const points = calc.semesters.map((s, i) => {
-          const x = calc.semesters.length === 1 ? left + plotW / 2 : left + i * (plotW / (calc.semesters.length - 1));
+        const points = calc.trendSemesters.map((s, i) => {
+          const x = calc.trendSemesters.length === 1 ? left + plotW / 2 : left + i * (plotW / (calc.trendSemesters.length - 1));
           const y = top + (4 - clamp(s.gpa, 0, 4)) / 4 * plotH;
           return { x, y, ...s };
         });
@@ -1301,7 +1590,7 @@
           const y = top + (4 - v) / 4 * plotH;
           return `<line class="chart-grid" x1="${left}" x2="${width-right}" y1="${y}" y2="${y}"/><text class="chart-axis-text" x="${left-12}" y="${y+3}" text-anchor="end">${v.toFixed(1)}</text>`;
         }).join("");
-        const labels = points.map((p,i) => `<text class="chart-axis-text" x="${p.x}" y="${height-16}" text-anchor="middle">${esc(`Y${p.year}-${p.term === "Summer" ? "S" : p.term}`)}</text>`).join("");
+        const labels = points.map((p,i) => `<text class="chart-axis-text" x="${p.x}" y="${height-16}" text-anchor="middle">${esc(`Y${p.year}-${p.term}`)}</text>`).join("");
         const dots = points.map((p,i) => `<circle class="chart-point ${i === points.length-1 ? "chart-point-current" : ""}" cx="${p.x}" cy="${p.y}" r="6"><title>${esc(p.label)} GPA ${fmt(p.gpa)}</title></circle><text x="${p.x}" y="${p.y-12}" text-anchor="middle" fill="#F8FAFC" font-size="11" font-weight="800">${fmt(p.gpa)}</text>`).join("");
         chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟ GPA รายภาคเรียน">
           <defs><linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F9C66F" stop-opacity=".27"/><stop offset="100%" stop-color="#F9C66F" stop-opacity="0"/></linearGradient></defs>
@@ -1310,7 +1599,7 @@
       }
 
       document.getElementById("semesterStrip").innerHTML = calc.semesters.length
-        ? calc.semesters.map(s => `<div class="semester-item"><span class="eyebrow">${esc(s.label)}</span><div style="margin-top:7px"><strong>${fmt(s.gpa)}</strong> <span style="color:var(--mist-gray);font-size:10px">GPA</span></div><p>${s.count} วิชา • ผ่าน ${s.earned} หน่วยกิต</p></div>`).join("")
+        ? calc.semesters.map(s => `<div class="semester-item" style="${s.hasData ? "" : "opacity:.58"}"><span class="eyebrow">${esc(s.label)}</span><div style="margin-top:7px"><strong>${fmt(s.gpa)}</strong> <span style="color:var(--mist-gray);font-size:10px">GPA</span></div><p>${s.hasData ? `${s.count} วิชา • ผ่าน ${s.earned} หน่วยกิต` : "ยังไม่มีรายวิชาในเทอมนี้"}</p></div>`).join("")
         : `<div class="semester-item"><span class="eyebrow">No data</span><p>ยังไม่มีรายวิชา</p></div>`;
     }
 
@@ -1433,7 +1722,7 @@
     function fillCourseOptions() {
       document.getElementById("courseGrade").innerHTML = GRADE_OPTIONS.map(g => `<option value="${g}">${g}${Object.prototype.hasOwnProperty.call(GRADE_POINTS,g) ? ` (${GRADE_POINTS[g].toFixed(1)})` : g === "S" ? " (ผ่าน)" : g === "U" ? " (ไม่ผ่าน)" : " (ไม่คิด GPA)"}</option>`).join("");
       document.getElementById("courseCategory").innerHTML = Object.entries(CATEGORIES).map(([key,c]) => `<option value="${key}">${esc(c.label)}</option>`).join("");
-      document.getElementById("courseYear").innerHTML = Array.from({length:12},(_,i) => `<option value="${i+1}">ชั้นปีที่ ${i+1}</option>`).join("");
+      document.getElementById("courseYear").innerHTML = Array.from({length:4},(_,i) => `<option value="${i+1}">ชั้นปีที่ ${i+1}</option>`).join("");
     }
 
     function openCourseForm(course=null) {
@@ -1444,7 +1733,7 @@
       document.getElementById("courseCredits").value = course?.credits ?? 3;
       document.getElementById("courseGrade").value = course?.grade || "A";
       document.getElementById("courseCategory").value = course?.category || "core";
-      document.getElementById("courseYear").value = course?.year || Math.max(1, ...state.courses.map(c => c.year));
+      document.getElementById("courseYear").value = course?.year || clamp(Math.max(1, ...state.courses.map(c => c.year)), 1, 4);
       document.getElementById("courseTerm").value = course?.term || "1";
       document.getElementById("courseRepeat").checked = Boolean(course?.repeat);
       document.getElementById("courseNote").value = course?.note || "";
@@ -1475,11 +1764,13 @@
       document.getElementById("ruleElective").value = r.curriculum.special_elective;
       document.getElementById("ruleFree").value = r.curriculum.freeElective;
       document.getElementById("ruleTotal").value = r.curriculum.total;
+      document.getElementById("cloudDatabaseUrl").value = syncConfig.databaseUrl || "";
+      document.getElementById("cloudRoomKey").value = syncConfig.roomKey || "main";
       openModal("settingsModal");
     }
 
     function exportData() {
-      const payload = { app: "Grade Track DDT", version: 4, exportedAt: new Date().toISOString(), ...state };
+      const payload = { app: "Grade Track DDT", version: APP_VERSION, exportedAt: new Date().toISOString(), ...state };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -1498,12 +1789,9 @@
         try {
           const parsed = JSON.parse(String(reader.result));
           if (!Array.isArray(parsed.courses)) throw new Error("ไม่พบรายการรายวิชา");
-          state = {
-            profile: { ...clone(DEFAULT_PROFILE), ...(parsed.profile || {}) },
-            rules: deepMergeRules(parsed.rules),
-            courses: parsed.courses.map(normalizeCourse),
-            selectedSemester: String(parsed.selectedSemester || "")
-          };
+          const normalized = normalizeSharedState(parsed, String(parsed.selectedSemester || ""));
+          if (!normalized) throw new Error("รูปแบบข้อมูลไม่ถูกต้อง");
+          state = normalized;
           filterState = { search:"", term:"all", category:"all" };
           document.getElementById("courseSearch").value = "";
           renderAll();
@@ -1522,7 +1810,7 @@
       const manifest = {
         name: "Grade Track DDT",
         short_name: "Grade Track",
-        description: "ระบบติดตามผลการเรียนและหลักสูตรแบบ Local-first",
+        description: "ระบบติดตามผลการเรียนและหลักสูตร พร้อม Cloud Sync",
         start_url: ".",
         display: "standalone",
         background_color: "#071A30",
@@ -1540,10 +1828,21 @@
     fillCourseOptions();
     setupManifest();
     renderAll();
+    initCloudSync();
 
     document.getElementById("addCourseBtn").addEventListener("click", () => openCourseForm());
     document.getElementById("editProfileBtn").addEventListener("click", openProfileForm);
     document.getElementById("settingsBtn").addEventListener("click", openSettingsForm);
+    document.getElementById("shareLinkBtn").addEventListener("click", copyShareLink);
+    document.getElementById("copyShareLinkSettingsBtn").addEventListener("click", copyShareLink);
+    document.getElementById("testCloudBtn").addEventListener("click", async () => {
+      const databaseUrl = sanitizeDatabaseUrl(document.getElementById("cloudDatabaseUrl").value);
+      const roomKey = sanitizeRoomKey(document.getElementById("cloudRoomKey").value);
+      if (!databaseUrl) return toast("กรุณากรอก Firebase Database URL แบบ https:// ให้ถูกต้อง", "danger");
+      saveSyncConfig({ databaseUrl, roomKey }, false);
+      const ok = await initCloudSync({ force: true });
+      toast(ok ? "เชื่อม Firebase สำเร็จ" : "เชื่อม Firebase ไม่สำเร็จ", ok ? "success" : "danger");
+    });
     document.getElementById("exportBtn").addEventListener("click", exportData);
     document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
     document.getElementById("importFile").addEventListener("change", event => {
@@ -1616,7 +1915,7 @@
       toast("บันทึกข้อมูลนักศึกษาแล้ว");
     });
 
-    document.getElementById("settingsForm").addEventListener("submit", event => {
+    document.getElementById("settingsForm").addEventListener("submit", async event => {
       event.preventDefault();
       const honor1 = Number(document.getElementById("ruleHonor1").value);
       const honor2 = Number(document.getElementById("ruleHonor2").value);
@@ -1638,9 +1937,17 @@
           total: Number(document.getElementById("ruleTotal").value)
         }
       });
+      const databaseUrlInput = document.getElementById("cloudDatabaseUrl").value.trim();
+      const databaseUrl = databaseUrlInput ? sanitizeDatabaseUrl(databaseUrlInput) : "";
+      if (databaseUrlInput && !databaseUrl) return toast("Firebase Database URL ต้องเป็น https:// ที่ถูกต้อง", "danger");
+      saveSyncConfig({
+        databaseUrl,
+        roomKey: document.getElementById("cloudRoomKey").value
+      });
       closeModal("settingsModal");
       renderAll();
-      toast("บันทึกเกณฑ์การประเมินแล้ว");
+      await initCloudSync({ force: true });
+      toast(databaseUrl ? "บันทึกเกณฑ์และตั้งค่า Cloud Sync แล้ว" : "บันทึกเกณฑ์แล้ว และปิด Cloud Sync");
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
@@ -1691,6 +1998,11 @@
       }
     });
     window.addEventListener("appinstalled", () => toast("ติดตั้ง Grade Track DDT แล้ว"));
+
+    window.addEventListener("online", () => initCloudSync({ force: true }));
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && syncConfig.databaseUrl) pullCloudState({ silent: true });
+    });
 
     if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
   })();
